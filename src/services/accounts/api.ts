@@ -27,17 +27,16 @@ export const accountsApi = createApi({
       invalidatesTags: ['AccountsList'],
     }),
     deleteAccount: builder.mutation({
-      query: (body) => ({
-        url: '/',
+      query: ({ id }) => ({
+        url: `/${id}`,
         method: 'DELETE',
-        body,
       }),
       invalidatesTags: ['AccountsList'],
     }),
     switchAccount: builder.mutation({
       query: (body) => ({
         url: '/switch',
-        method: 'DELETE',
+        method: 'PUT',
         body,
       }),
       invalidatesTags: ['AccountsList'],

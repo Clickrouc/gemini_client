@@ -19,9 +19,9 @@ import SwitchModal from './components/SwitchModal';
 import {
   useDeleteAccountMutation,
   useGetAccountsQuery,
-  useUpdateAccountMutation,
+  useSwitchAccountMutation,
 } from '../../services/accounts/api';
-import { cookieConverter, convertError } from '../../utils';
+import { convertError } from '../../utils';
 
 const Styled = {
   Header: styled.div`
@@ -57,30 +57,25 @@ const Accounts: FC = () => {
   const [accounts, setAccounts] = useState<IAccount[]>([]);
 
   const { data } = useGetAccountsQuery({});
-  const [updateAccount] = useUpdateAccountMutation();
   const [deleteAccount] = useDeleteAccountMutation();
+  const [switchAccount] = useSwitchAccountMutation();
 
   useEffect(() => {
     if (!data) return;
     setShowedPasswords({});
 
-    const arr: IAccount[] = [];
     const passwords: { [key: string]: boolean } = {};
-    (data?.results || []).forEach((item: any) => {
-      passwords[item.id] = false;
-      arr.push({
-        ...item,
-        cookies: cookieConverter(item.cookies, true),
-      });
+    (data || []).forEach((item: any) => {
+      passwords[item._id] = false;
     });
 
     setShowedPasswords(passwords);
-    setAccounts(arr);
+    setAccounts(data);
   }, [data]);
 
   const removeItem = (): void => {
     deleteAccount({
-      accountId: deletedItem?.id,
+      id: deletedItem?._id,
     }).then((res: any) => {
       if (res.error) return message.error(convertError(res.error));
       setIsRemoveModalOpen(false);
@@ -89,10 +84,12 @@ const Accounts: FC = () => {
   };
 
   const switchItem = (): void => {
-    const account: IAccount | undefined = accounts.find((item) => item.id === switchedItem?.id);
+    const account: IAccount | undefined = accounts.find((item) => item._id === switchedItem?._id);
     if (account) {
-      account.disabled = !account.disabled;
-      updateAccount(account).then((res: any) => {
+      switchAccount({
+        username: account?.username,
+        disabled: !account?.disabled,
+      }).then((res: any) => {
         if (res.error) return message.error(convertError(res.error));
         setIsSwitchModalOpen(false);
         return message.success('Account has been switched successfully');
@@ -117,15 +114,15 @@ const Accounts: FC = () => {
       title: 'Password',
       dataIndex: 'password',
       key: 'password',
-      render: (_, { id, password }) => (
+      render: (_, { _id, password }) => (
         <>
-          {showedPasswords[id] ? password : '*****'}<br />
+          {showedPasswords[_id] ? password : '*****'}<br />
           <Checkbox
-            checked={showedPasswords[id]}
+            checked={showedPasswords[_id]}
             onChange={(e) => {
               setShowedPasswords({
                 ...showedPasswords,
-                [id]: e.target.checked,
+                [_id]: e.target.checked,
               });
             }}
           >
@@ -153,7 +150,7 @@ const Accounts: FC = () => {
       key: 'actions',
       render: (_, item) => (
         <Space>
-          <Link to={`/accounts/edit/${item.id}`}>
+          <Link to={`/accounts/edit/${item._id}`}>
             <Button type="text" icon={<EditOutlined />} />
           </Link>
 
@@ -193,7 +190,7 @@ const Accounts: FC = () => {
           dataSource={accounts || []}
           columns={columns}
           pagination={false}
-          rowKey="id"
+          rowKey="_id"
           expandable={{
             expandedRowRender: (record) => (
               <Space direction="vertical" style={{ width: '100%' }}>

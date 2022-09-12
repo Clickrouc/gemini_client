@@ -6,9 +6,11 @@ import {
 } from 'antd';
 
 import { IAccount, ICookie } from '../../../../services/accounts/types';
-import { useUpdateAccountMutation } from '../../../../services/accounts/api';
+import {
+  useCreateAccountMutation, useUpdateAccountMutation,
+} from '../../../../services/accounts/api';
 import Domains from './components/Domains';
-import { cookieConverter, convertError } from '../../../../utils';
+import { convertError } from '../../../../utils';
 import { useGetProxiesQuery } from '../../../../services/proxies/api';
 import { IProxy } from '../../../../services/proxies/types';
 
@@ -39,7 +41,8 @@ const EditModal: FC<Props> = ({ accounts }) => {
   const [data, setData] = useState<IAccount | null>(null);
   const [isLoading, setLoading] = useState<boolean>(false);
 
-  const [createAccount] = useUpdateAccountMutation();
+  const [createAccount] = useCreateAccountMutation();
+  const [updateAccount] = useUpdateAccountMutation();
   const { data: proxies } = useGetProxiesQuery({});
 
   useEffect(() => {
@@ -52,14 +55,14 @@ const EditModal: FC<Props> = ({ accounts }) => {
   useEffect(() => {
     if (!params.id) navigate('/accounts/edit/new');
     if (params.id === 'new') return;
-    setData(accounts.find((item) => item.id === params.id) || null);
+    setData(accounts.find((item) => item._id === params.id) || null);
   }, [accounts, navigate, params.id]);
 
   useEffect(() => {
     if (!data) return;
 
     form.setFieldsValue({
-      id: data?.id,
+      _id: data?._id,
       username: data?.username,
       password: data?.password,
       proxies: data?.proxies || [],
@@ -79,17 +82,27 @@ const EditModal: FC<Props> = ({ accounts }) => {
     });
     const request = {
       ...values,
-      cookies: cookieConverter(cookies),
+      cookies,
     };
 
     setLoading(true);
-    createAccount(request).then((res: any) => {
-      setLoading(false);
-      if (res.error) return message.error(convertError(res.error));
-      message.success('Account has been updated successfully');
-      navigate('/accounts');
-      return null;
-    });
+    if (params.id === 'new') {
+      createAccount(request).then((res: any) => {
+        setLoading(false);
+        if (res.error) return message.error(convertError(res.error));
+        message.success('Account has been updated successfully');
+        navigate('/accounts');
+        return null;
+      });
+    } else {
+      updateAccount(request).then((res: any) => {
+        setLoading(false);
+        if (res.error) return message.error(convertError(res.error));
+        message.success('Account has been updated successfully');
+        navigate('/accounts');
+        return null;
+      });
+    }
   };
 
   return (
@@ -128,7 +141,7 @@ const EditModal: FC<Props> = ({ accounts }) => {
         onFinish={onFinish}
         scrollToFirstError
       >
-        <Form.Item name="id" noStyle>
+        <Form.Item name="_id" noStyle>
           <Input type="hidden" />
         </Form.Item>
 
@@ -170,9 +183,9 @@ const EditModal: FC<Props> = ({ accounts }) => {
             allowClear
             placeholder="Please select"
           >
-            {(proxies?.results || []).map((proxy: IProxy) => (
-              <Select.Option key={proxy.id} value={proxy.name}>
-                {proxy.name}
+            {(proxies || []).map((proxy: IProxy) => (
+              <Select.Option key={proxy.label} value={proxy.label}>
+                {proxy.label}
               </Select.Option>
             ))}
           </Select>

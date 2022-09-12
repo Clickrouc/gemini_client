@@ -7,7 +7,7 @@ export interface ICookie {
 }
 
 export interface IAccount {
-  id: string;
+  _id: string;
   disabled: boolean;
   password: string;
   proxies: string[];

@@ -4,11 +4,9 @@ import { baseQuery } from '../queryConfig';
 export const proxiesApi = createApi({
   reducerPath: 'proxiesApi',
   baseQuery: baseQuery('/proxies'),
-  tagTypes: ['AccountsList'],
   endpoints: (builder) => ({
     getProxies: builder.query({
       query: () => '/simple',
-      providesTags: ['AccountsList'],
     }),
   }),
 });
